@@ -19,8 +19,6 @@ class Stage:
         return self._write_terminal("timeout")
 
     def _write_terminal(self, outcome):
-        if self.store.get(self.stage_id) is not None:
-            return False
         self._before_write(outcome)
-        self.store.insert(self.stage_id, outcome)
-        return True
+        # One atomic statement: the primary key lets exactly one writer in.
+        return self.store.insert(self.stage_id, outcome)

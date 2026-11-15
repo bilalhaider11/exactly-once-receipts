@@ -9,7 +9,7 @@ class ReceiptStore:
         self._conn = sqlite3.connect(":memory:", check_same_thread=False)
         self._lock = threading.Lock()
         self._conn.execute(
-            "CREATE TABLE receipts (stage_id TEXT NOT NULL, outcome TEXT NOT NULL)"
+            "CREATE TABLE receipts (stage_id TEXT PRIMARY KEY, outcome TEXT NOT NULL)"
         )
 
     def get(self, stage_id):
@@ -20,11 +20,12 @@ class ReceiptStore:
 
     def insert(self, stage_id, outcome):
         with self._lock:
-            self._conn.execute(
-                "INSERT INTO receipts (stage_id, outcome) VALUES (?, ?)",
+            cur = self._conn.execute(
+                "INSERT OR IGNORE INTO receipts (stage_id, outcome) VALUES (?, ?)",
                 (stage_id, outcome),
             )
             self._conn.commit()
+            return cur.rowcount == 1  # True only for the writer that won
 
     def all(self, stage_id):
         with self._lock:
